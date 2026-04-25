@@ -22,6 +22,6 @@ from langgraph_genai_bridge.bridge import GenAIBridge
 from langgraph_genai_bridge.cache import ContextCacheManager
 from langgraph_genai_bridge.tools import convert_langchain_tools
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __author__ = "Pierre Samson, Claude Opus (Anthropic)"
 __all__ = ["GenAIBridge", "ContextCacheManager", "convert_langchain_tools"]

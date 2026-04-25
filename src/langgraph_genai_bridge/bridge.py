@@ -47,6 +47,7 @@ class GenAIBridge:
         model: str = "gemini-2.5-flash",
         temperature: float = 0.1,
         max_output_tokens: int = 8192,
+        flex: bool = False,
         service_tier: Optional[str] = None,
     ):
         """
@@ -55,24 +56,35 @@ class GenAIBridge:
             model: Gemini model name (default: gemini-2.5-flash)
             temperature: Sampling temperature (default: 0.1 for deterministic)
             max_output_tokens: Maximum output length
-            service_tier: Optional pricing tier passed to GenerateContentConfig.
-                Set to "flex" for ~50% latency-tolerant discount on supported
-                models (Google v1beta API renamed "SERVICE_TIER_FLEX" to
-                lowercase "flex" — use the lowercase form). None = default tier.
+            flex: Boolean toggle for Google's "flex" pricing tier — opts in to
+                the ~50% latency-tolerant discount on supported models. The
+                friendly form of `service_tier="flex"`. Default False = standard
+                tier. Mutually exclusive with `service_tier`; pass one or the
+                other, not both.
+            service_tier: Advanced override — pass an explicit tier string
+                directly to GenerateContentConfig.service_tier. Use this if
+                Google adds new tiers beyond "flex" that you want before this
+                library ships a friendly boolean for them. None = no tier.
         """
+        if flex and service_tier:
+            raise ValueError(
+                "GenAIBridge: pass `flex=True` OR `service_tier='...'`, not both"
+            )
+        resolved_tier = service_tier if service_tier else ("flex" if flex else None)
+
         from google import genai
 
         self.client = genai.Client(api_key=api_key)
         self.model = model
         self.temperature = temperature
         self.max_output_tokens = max_output_tokens
-        self.service_tier = service_tier
+        self.service_tier = resolved_tier
 
         self._tool_declarations = None
         self._cache_manager: Optional[ContextCacheManager] = None
         self._langchain_fallback = None
 
-        tier_tag = f", tier={service_tier}" if service_tier else ""
+        tier_tag = f", tier={resolved_tier}" if resolved_tier else ""
         logger.info(f"GenAIBridge initialized: model={model}, temp={temperature}{tier_tag}")
 
     def set_tools(self, langchain_tools: list):
