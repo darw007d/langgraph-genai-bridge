@@ -47,6 +47,7 @@ class GenAIBridge:
         model: str = "gemini-2.5-flash",
         temperature: float = 0.1,
         max_output_tokens: int = 8192,
+        service_tier: Optional[str] = None,
     ):
         """
         Args:
@@ -54,6 +55,10 @@ class GenAIBridge:
             model: Gemini model name (default: gemini-2.5-flash)
             temperature: Sampling temperature (default: 0.1 for deterministic)
             max_output_tokens: Maximum output length
+            service_tier: Optional pricing tier passed to GenerateContentConfig.
+                Set to "flex" for ~50% latency-tolerant discount on supported
+                models (Google v1beta API renamed "SERVICE_TIER_FLEX" to
+                lowercase "flex" — use the lowercase form). None = default tier.
         """
         from google import genai
 
@@ -61,12 +66,14 @@ class GenAIBridge:
         self.model = model
         self.temperature = temperature
         self.max_output_tokens = max_output_tokens
+        self.service_tier = service_tier
 
         self._tool_declarations = None
         self._cache_manager: Optional[ContextCacheManager] = None
         self._langchain_fallback = None
 
-        logger.info(f"GenAIBridge initialized: model={model}, temp={temperature}")
+        tier_tag = f", tier={service_tier}" if service_tier else ""
+        logger.info(f"GenAIBridge initialized: model={model}, temp={temperature}{tier_tag}")
 
     def set_tools(self, langchain_tools: list):
         """
@@ -148,10 +155,13 @@ class GenAIBridge:
                             )
 
             # Build config
-            config = genai_types.GenerateContentConfig(
-                temperature=self.temperature,
-                max_output_tokens=self.max_output_tokens,
-            )
+            config_kwargs = {
+                "temperature": self.temperature,
+                "max_output_tokens": self.max_output_tokens,
+            }
+            if self.service_tier:
+                config_kwargs["service_tier"] = self.service_tier
+            config = genai_types.GenerateContentConfig(**config_kwargs)
 
             if self._tool_declarations:
                 config.tools = [genai_types.Tool(
