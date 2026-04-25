@@ -91,6 +91,41 @@ def langchain_to_genai(messages: list, skip_system: bool = True) -> list:
     return contents
 
 
+def _extract_usage_metadata(response) -> dict | None:
+    """Pull the GenAI response's usage_metadata into LangChain's standard shape.
+
+    LangChain v0.3+ AIMessage carries usage_metadata as
+    `{"input_tokens": int, "output_tokens": int, "total_tokens": int,
+      "input_token_details": {"cache_read": int}}`.
+
+    Google's GenerateContentResponse exposes usage_metadata with fields
+    like `prompt_token_count`, `candidates_token_count`,
+    `cached_content_token_count`, `total_token_count`, `thoughts_token_count`.
+    Mapping below preserves all useful counts including thinking tokens
+    (separate field, charged at output rate but useful to track).
+    """
+    um = getattr(response, "usage_metadata", None)
+    if um is None:
+        return None
+    prompt = getattr(um, "prompt_token_count", 0) or 0
+    candidates = getattr(um, "candidates_token_count", 0) or 0
+    cached = getattr(um, "cached_content_token_count", 0) or 0
+    thoughts = getattr(um, "thoughts_token_count", 0) or 0
+    total = getattr(um, "total_token_count", None)
+    if total is None:
+        total = prompt + candidates + thoughts
+    out: dict = {
+        "input_tokens": int(prompt),
+        "output_tokens": int(candidates + thoughts),
+        "total_tokens": int(total),
+    }
+    if cached:
+        out["input_token_details"] = {"cache_read": int(cached)}
+    if thoughts:
+        out.setdefault("output_token_details", {})["reasoning"] = int(thoughts)
+    return out
+
+
 def genai_to_langchain(response) -> "AIMessage":
     """
     Convert a Google GenAI response to a LangChain AIMessage.
@@ -99,7 +134,9 @@ def genai_to_langchain(response) -> "AIMessage":
         response: google.genai GenerateContentResponse
 
     Returns:
-        LangChain AIMessage with content and tool_calls (if any)
+        LangChain AIMessage with content, tool_calls (if any), and
+        usage_metadata in LangChain v0.3+ standard shape (so downstream
+        token-tracking interceptors keep working transparently).
     """
     from langchain_core.messages import AIMessage
 
@@ -120,7 +157,12 @@ def genai_to_langchain(response) -> "AIMessage":
                 "id": f"call_{fc.name}_{int(time.time() * 1000)}",
             })
 
-    return AIMessage(
-        content="".join(text_parts) if text_parts else "",
-        tool_calls=tool_calls if tool_calls else None,
-    )
+    usage = _extract_usage_metadata(response)
+    msg_kwargs: dict = {
+        "content": "".join(text_parts) if text_parts else "",
+    }
+    if tool_calls:
+        msg_kwargs["tool_calls"] = tool_calls
+    if usage is not None:
+        msg_kwargs["usage_metadata"] = usage
+    return AIMessage(**msg_kwargs)
