@@ -2,7 +2,7 @@
 
 **Native Google GenAI SDK integration for LangGraph** with context caching, tool auto-conversion, and bidirectional message translation.
 
-> By [BrainSurfing Technologies](https://brainsurfing.tech)
+> By **Pierre Samson** ([@darw007d](https://github.com/darw007d)) and **Claude Opus** (Anthropic)
 
 ## Why?
 
@@ -177,4 +177,11 @@ Force cache invalidation.
 
 ## License
 
-MIT License. By [BrainSurfing Technologies](https://brainsurfing.tech).
+MIT License. Co-authored by [Pierre Samson](https://github.com/darw007d) and Claude Opus (Anthropic).
+
+Sister to the Phase 19 PyPI library family — same "small, tested, publishable" ethos:
+[phawkes](https://pypi.org/project/phawkes/) (Hawkes processes) ·
+[fisherrao](https://pypi.org/project/fisherrao/) (information geometry) ·
+[tailcor](https://pypi.org/project/tailcor/) (tail-contagion decomposition) ·
+[diebold-yilmaz](https://pypi.org/project/diebold-yilmaz/) (spillover index) ·
+[hodgex](https://pypi.org/project/hodgex/) (Hodge Laplacians).

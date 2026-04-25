@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "langgraph-genai-bridge"
-version = "0.1.1"
+version = "0.1.2"
 description = "Native Google GenAI SDK integration for LangGraph with context caching, tool auto-conversion, and bidirectional message translation."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-    {name = "BrainSurfing Technologies", email = "hello@brainsurfing.tech"},
+    {name = "Pierre Samson"},
+    {name = "Claude Opus (Anthropic)", email = "noreply@anthropic.com"},
 ]
 keywords = [
     "langgraph", "google-genai", "gemini", "langchain", "context-caching",
@@ -25,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -45,9 +47,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://brainsurfing.tech"
-Repository = "https://github.com/brainsurfing/langgraph-genai-bridge"
-Issues = "https://github.com/brainsurfing/langgraph-genai-bridge/issues"
+Homepage = "https://github.com/darw007d/langgraph-genai-bridge"
+Repository = "https://github.com/darw007d/langgraph-genai-bridge"
+Issues = "https://github.com/darw007d/langgraph-genai-bridge/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
