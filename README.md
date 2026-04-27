@@ -167,13 +167,50 @@ Enable context caching for system prompts.
 
 Call Gemini and return a LangChain AIMessage. Compatible with `tools_condition`.
 
+### `bridge.invoke_structured(messages, response_schema, system_prompt=None, return_raw=False)` *(v0.2+)*
+
+Structured output via Gemini's native `response_schema` — **preserves caching and Flex tier**, unlike LangChain's `with_structured_output()` wrapper which forces a separate ChatGoogleGenerativeAI client and bypasses Google context caching.
+
+```python
+from pydantic import BaseModel
+from langgraph_genai_bridge import GenAIBridge
+
+class TradeVerdict(BaseModel):
+    action: str          # "BUY" / "SELL" / "SKIP"
+    confidence: float    # 0.0–1.0
+
+bridge = GenAIBridge(api_key="...", model="gemini-2.5-pro")
+bridge.enable_caching(ttl_seconds=3600)
+
+# First call: caches the playbook (one-time cost)
+# Subsequent calls: cache_read at ~10% of input rate AND parsed structured output
+verdict = bridge.invoke_structured(
+    messages=[HumanMessage("Score AAPL")],
+    response_schema=TradeVerdict,
+    system_prompt=long_playbook_text,
+)
+print(verdict.action, verdict.confidence)
+```
+
+Tools and `response_schema` are mutually exclusive in Gemini's API — when a schema is provided, registered tools are not attached. Use one or the other per call.
+
+Pass `return_raw=True` to get `{"parsed": <instance>, "raw": <google_response>}` for usage metadata access.
+
 ### `bridge.set_langchain_fallback(langchain_llm)`
 
-Set a LangChain ChatModel as fallback.
+Set a LangChain ChatModel as fallback. Used by both `invoke()` (returns AIMessage) and `invoke_structured()` (calls `.with_structured_output(schema).invoke()`).
 
 ### `bridge.invalidate_cache()`
 
 Force cache invalidation.
+
+## Changelog
+
+- **v0.2.0** — `invoke_structured()` for native `response_schema` output that preserves Google context caching (Pro tier). Closes the structured-output ↔ caching trade-off that v0.1 had to fall back to LangChain for.
+- **v0.1.5** — Friendly `flex=True` boolean alongside `service_tier="flex"`.
+- **v0.1.4** — `usage_metadata` propagated on returned AIMessage (token tracking).
+- **v0.1.3** — `service_tier` parameter (Flex 50% rebate).
+- **v0.1.2** — Packaging fix (v0.1.0/0.1.1 sdist was empty due to flat-layout misconfig).
 
 ## License
 
